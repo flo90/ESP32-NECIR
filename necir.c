@@ -137,7 +137,7 @@ void parse_nec(rmt_item32_t* items, size_t size)
 	//Detect header
 	if( necHeader(items) )
 	{
-		ESP_LOGI(TAG, "HEADER DETECTED");
+		//ESP_LOGI(TAG, "HEADER DETECTED");
 		state = STATE_ADDR;
 
 		bit = 0;
