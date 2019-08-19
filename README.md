@@ -20,7 +20,7 @@ A menuconfig entry called "NECIR" should appear in the "Component config" submen
 
 After including necir.h (#include <necir.h>) just initialize the library by calling necir_init().
 
-To use this library productively, reimplement the function necir_callback(...) somewhere. The included function is defined as 'weak' so that the reimplementation is prefered over it during linking.
+To use this library productively, reimplement the function necir_callback(...) somewhere. The included function is defined as 'weak' so that the reimplementation is preferred over it during linking.
 
 ## Configuration
 The library is configurable through 'make menuconfig', it povides the following configuration options:
