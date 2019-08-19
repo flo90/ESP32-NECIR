@@ -26,7 +26,7 @@ To use this library productively, reimplement the function necir_callback(...) s
 The library is configurable through 'make menuconfig', it povides the following configuration options:
 
 * Rx RMT channel - The RMT module channel used for receiving
-* Rx RMT of memory blocks - Number of RMT module memory blocks used for receiving
+* Rx RMT number of memory blocks - Number of RMT module memory blocks used for receiving
 * Rx GPIO - Input GPIO of received signal (connected to the receiver)
 
 
