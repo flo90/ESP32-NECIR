@@ -1,0 +1,26 @@
+menu "NECIR"
+
+config NECIR_RMT_RXCHANNEL
+	int "Rx RMT channel"
+	default 0
+	range 0 7
+	help
+		Sets the remote channel to use for rx.
+
+config NECIR_RMT_RXMEM
+	int "Rx RMT number of memory blocks"
+	default 1
+	range 1 8
+	help
+		Sets the number of memory blocks used for the rx channel.
+		Remember that a number greater 1 will occupy the memory of
+		the next channel.
+
+config NECIR_RMT_RXGPIO
+	int "Rx GPIO number"
+	default 19
+	range 0 39
+	help
+		Sets the GPIO the receiver is connected to.
+		
+endmenu
