@@ -209,7 +209,8 @@ void parse_nec(rmt_item32_t* items, size_t size)
 
 		case STATE_REPEAT:
 			repeat++;
-			necir_callback(addr | addrInv<<8, cmd, repeat);
+			if(cmd == ((uint8_t)~cmdInv))
+				necir_callback(addr | addrInv<<8, cmd, repeat);
 			break;
 
 		default:
