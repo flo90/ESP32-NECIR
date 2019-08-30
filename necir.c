@@ -20,6 +20,8 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 
+#include "esp_timer.h"
+
 #include "esp_err.h"
 #include "esp_log.h"
 
@@ -49,7 +51,6 @@
 #define NEC_HEADER_HIGH_TICK (NEC_HEADER_HIGH_US / 10 * RMT_TICK_10_US)
 #define NEC_HEADER_LOW_TICK (NEC_HEADER_LOW_US / 10 * RMT_TICK_10_US)
 
-
 #define NEC_BITX_HIGH_US 560
 #define NEC_BIT1_LOW_US 1690
 #define NEC_BIT0_LOW_US 560
@@ -64,6 +65,13 @@
 #define NEC_BIT_MARGIN_US 250
 #define NEC_BIT_MARGIN_TICK (NEC_BIT_MARGIN_US / 10 * RMT_TICK_10_US)
 
+#ifndef CONFIG_NECIR_RX_STACK_SIZE
+#define CONFIG_NECIR_RX_STACK_SIZE 4096
+#endif
+
+#define RX_IDLE_TIME_US 120000
+
+
 enum {
 	STATE_FIRST_TIME_HEADER,
 	STATE_ADDR,
@@ -74,6 +82,16 @@ enum {
 	STATE_REPEAT,
 };
 
+
+static uint8_t addr;
+static uint8_t addrInv;
+static uint8_t cmd;
+static uint8_t cmdInv;
+static uint32_t repeat;
+static esp_timer_handle_t idleTimer;
+
+
+
 void rx_task(void* args);
 void parse_nec(rmt_item32_t* items, size_t size);
 
@@ -81,8 +99,16 @@ static inline bool necBit(rmt_item32_t* item);
 static inline bool necHeader(rmt_item32_t* item);
 static inline bool nextState(uint8_t* bit);
 
+static void idleCb(void* args);
+
 void necir_init()
 {
+	static const esp_timer_create_args_t timerInit =
+	{
+			.callback = idleCb,
+			.dispatch_method = ESP_TIMER_TASK,
+			.name = "NECIR idle timer",
+	};
 	rmt_config_t rmt_rx;
 	rmt_rx.channel = CONFIG_NECIR_RMT_RXCHANNEL;
 	rmt_rx.gpio_num = CONFIG_NECIR_RMT_RXGPIO;
@@ -95,7 +121,9 @@ void necir_init()
 	rmt_config(&rmt_rx);
 	rmt_driver_install(rmt_rx.channel, 1000, 0);
 
-	xTaskCreate(rx_task, "necir_rx_task", 4096, NULL, 10, NULL);
+	esp_timer_create(&timerInit, &idleTimer);
+
+	xTaskCreate(rx_task, "necir_rx_task", CONFIG_NECIR_RX_STACK_SIZE, NULL, 10, NULL);
 }
 
 void rx_task(void* args)
@@ -125,18 +153,12 @@ void parse_nec(rmt_item32_t* items, size_t size)
 	static uint32_t state = STATE_FIRST_TIME_HEADER;
 	static uint8_t bit;
 
-	static uint8_t addr;
-	static uint8_t addrInv;
-
-	static uint8_t cmd;
-	static uint8_t cmdInv;
-	static uint32_t repeat;
-
 	size_t i = 0;
 
 	//Detect header
 	if( necHeader(items) )
 	{
+		esp_timer_stop(idleTimer);
 		//ESP_LOGI(TAG, "HEADER DETECTED");
 		state = STATE_ADDR;
 
@@ -196,7 +218,10 @@ void parse_nec(rmt_item32_t* items, size_t size)
 			if(nextState(&bit))
 			{
 				if(cmd == ((uint8_t)~cmdInv))
-					necir_callback(addr | addrInv<<8, cmd, repeat);
+				{
+					esp_timer_start_once(idleTimer, RX_IDLE_TIME_US);
+					necir_callback(addr | addrInv<<8, cmd, repeat, false);
+				}
 				state = STATE_REPEAT;
 			}
 
@@ -210,7 +235,11 @@ void parse_nec(rmt_item32_t* items, size_t size)
 		case STATE_REPEAT:
 			repeat++;
 			if(cmd == ((uint8_t)~cmdInv))
-				necir_callback(addr | addrInv<<8, cmd, repeat);
+			{
+				esp_timer_stop(idleTimer);
+				esp_timer_start_once(idleTimer, RX_IDLE_TIME_US);
+				necir_callback(addr | addrInv<<8, cmd, repeat, false);
+			}
 			break;
 
 		default:
@@ -267,8 +296,17 @@ static inline bool nextState(uint8_t* bit)
 }
 
 
-__attribute__((weak)) void necir_callback(uint16_t addr, uint8_t cmd, uint32_t repeat)
+__attribute__((weak)) void necir_callback(uint16_t addr, uint8_t cmd, uint32_t repeat, bool idle)
 {
-	ESP_LOGI(TAG, "ADDR: %.2x ADDR_INV %.2x CMD: %.2x Repeat: %d", addr&0xFF, (addr>>8)&0xFF, cmd, repeat);
+	ESP_LOGI(TAG, "ADDR: %.2x ADDR_INV %.2x CMD: %.2x Repeat: %d Idle: %d", addr&0xFF, (addr>>8)&0xFF, cmd, repeat, idle);
 }
 
+
+static void idleCb(void* args)
+{
+	ESP_LOGI(TAG, "SIGNAL IDLE");
+	if(cmd == ((uint8_t)~cmdInv))
+	{
+		necir_callback(addr | addrInv<<8, cmd, repeat, true);
+	}
+}

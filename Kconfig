@@ -23,4 +23,10 @@ config NECIR_RMT_RXGPIO
 	help
 		Sets the GPIO the receiver is connected to.
 		
+config NECIR_RX_STACK_SIZE
+	int "Rx stack size"
+	default 4096
+	help
+		Sets the stack size of the receiving process. Increase if more memory is needed in the callback.
+		
 endmenu

@@ -16,8 +16,18 @@
 
 #include <inttypes.h>
 
+/**
+ * Initializes NECIR.
+ */
 void necir_init(void);
-void necir_callback(uint16_t addr, uint8_t cmd, uint32_t repeat);
 
+/**
+ * Callback if valid data is received.
+ * @param addr Address.
+ * @param cmd Command - Mapped to individual buttons.
+ * @param repeat Counts up every 100ms as long as the button is held on the remote.
+ * @param idle True if signal gets idle (button released on remote).
+ */
+void necir_callback(uint16_t addr, uint8_t cmd, uint32_t repeat, bool idle);
 
 #endif /* NECIR_H_ */
