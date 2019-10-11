@@ -89,7 +89,7 @@ static uint8_t cmd;
 static uint8_t cmdInv;
 static uint32_t repeat;
 static esp_timer_handle_t idleTimer;
-
+static uint32_t state = STATE_FIRST_TIME_HEADER;
 
 
 void rx_task(void* args);
@@ -100,6 +100,8 @@ static inline bool necHeader(rmt_item32_t* item);
 static inline bool nextState(uint8_t* bit);
 
 static void idleCb(void* args);
+
+
 
 void necir_init()
 {
@@ -150,7 +152,6 @@ void rx_task(void* args)
 
 void parse_nec(rmt_item32_t* items, size_t size)
 {
-	static uint32_t state = STATE_FIRST_TIME_HEADER;
 	static uint8_t bit;
 
 	size_t i = 0;
@@ -305,6 +306,7 @@ __attribute__((weak)) void necir_callback(uint16_t addr, uint8_t cmd, uint32_t r
 static void idleCb(void* args)
 {
 	ESP_LOGI(TAG, "SIGNAL IDLE");
+	state = STATE_FIRST_TIME_HEADER;
 	if(cmd == ((uint8_t)~cmdInv))
 	{
 		necir_callback(addr | addrInv<<8, cmd, repeat, true);
