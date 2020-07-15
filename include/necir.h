@@ -1,4 +1,4 @@
-/*  Copyright (C) 2019  Florian Menne
+/*  Copyright (C) 2020  Florian Menne
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
@@ -16,6 +16,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Initializes NECIR.
  */
@@ -29,5 +33,9 @@ void necir_init(void);
  * @param idle True if signal gets idle (button released on remote).
  */
 void necir_callback(uint16_t addr, uint8_t cmd, uint32_t repeat, bool idle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* NECIR_H_ */
