@@ -111,13 +111,9 @@ void necir_init()
 			.dispatch_method = ESP_TIMER_TASK,
 			.name = "NECIR idle timer",
 	};
-	rmt_config_t rmt_rx;
-	rmt_rx.channel = CONFIG_NECIR_RMT_RXCHANNEL;
-	rmt_rx.gpio_num = CONFIG_NECIR_RMT_RXGPIO;
+	rmt_config_t rmt_rx = RMT_DEFAULT_CONFIG_RX(CONFIG_NECIR_RMT_RXGPIO, CONFIG_NECIR_RMT_RXCHANNEL);
 	rmt_rx.clk_div = RMT_CLK_DIV;
 	rmt_rx.mem_block_num = CONFIG_NECIR_RMT_RXMEM;
-	rmt_rx.rmt_mode = RMT_MODE_RX;
-	rmt_rx.rx_config.filter_en = true;
 	rmt_rx.rx_config.filter_ticks_thresh = 100;
 	rmt_rx.rx_config.idle_threshold = rmt_item32_tIMEOUT_US / 10 * (RMT_TICK_10_US);
 	rmt_config(&rmt_rx);
@@ -134,7 +130,7 @@ void rx_task(void* args)
 	RingbufHandle_t rb = NULL;
 
 	rmt_get_ringbuf_handle(channel, &rb);
-	rmt_rx_start(channel, 1);
+	rmt_rx_start(channel, true);
 
 	while(rb) {
 		size_t rx_size = 0;
